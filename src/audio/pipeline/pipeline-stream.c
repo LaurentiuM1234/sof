@@ -502,8 +502,16 @@ void pipeline_get_timestamp(struct pipeline *p, struct comp_dev *host,
 	data.posn = posn;
 
 	if (walk_ctx.comp_func(host, NULL, &walk_ctx, host->direction) !=
-	    PPL_STATUS_PATH_STOP)
-		pipe_dbg(p, "pipeline_get_timestamp(): DAI position update failed");
+	    PPL_STATUS_PATH_STOP) {
+		struct comp_dev *dai = pipeline_get_dai_comp(host->pipeline->pipeline_id);
+
+		if (!dai) {
+			pipe_dbg(p, "pipeline_get_timestamp(): DAI position update failed");
+			return;
+		}
+
+		platform_dai_timestamp(dai, posn);
+	}
 
 	/* set timestamp resolution */
 	posn->timestamp_ns = p->period * 1000;
