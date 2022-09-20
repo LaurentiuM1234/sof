@@ -191,11 +191,6 @@ static inline bool domain_is_pending(struct ll_schedule_domain *domain,
 
 #ifndef __ZEPHYR__
 struct ll_schedule_domain *timer_domain_init(struct timer *timer, int clk);
-#else
-struct ll_schedule_domain *zephyr_domain_init(int clk);
-#define timer_domain_init(timer, clk) zephyr_domain_init(clk)
-#endif
-
 struct ll_schedule_domain *dma_multi_chan_domain_init(struct dma *dma_array,
 						      uint32_t num_dma, int clk,
 						      bool aggregated_irq);
@@ -203,5 +198,13 @@ struct ll_schedule_domain *dma_multi_chan_domain_init(struct dma *dma_array,
 struct ll_schedule_domain *dma_single_chan_domain_init(struct dma *dma_array,
 						       uint32_t num_dma,
 						       int clk);
-
+#else
+struct ll_schedule_domain *zephyr_domain_init(int clk);
+struct ll_schedule_domain *zephyr_dma_domain_init(struct dma *dmas,
+						  uint32_t num_dmas,
+						  int clk);
+#define timer_domain_init(timer, clk) zephyr_domain_init(clk)
+#define dma_multi_chan_domain_init(dmas, num_dmas, clk, aggregated_irq)\
+	zephyr_dma_domain_init(dmas, num_dmas, clk)
+#endif
 #endif /* __SOF_SCHEDULE_LL_SCHEDULE_DOMAIN_H__ */
