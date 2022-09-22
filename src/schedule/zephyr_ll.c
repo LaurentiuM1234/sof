@@ -525,12 +525,6 @@ int zephyr_ll_scheduler_init(struct ll_schedule_domain *domain)
 {
 	struct zephyr_ll *sch;
 
-	if (domain->type != SOF_SCHEDULE_LL_TIMER) {
-		tr_err(&ll_tr, "zephyr_ll_scheduler_init(): unsupported domain %u",
-		       domain->type);
-		return -EINVAL;
-	}
-
 	/* initialize per-core scheduler private data */
 	sch = rmalloc(SOF_MEM_ZONE_SYS, 0, SOF_MEM_CAPS_RAM, sizeof(*sch));
 	list_init(&sch->tasks);
