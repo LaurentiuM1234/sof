@@ -457,8 +457,10 @@ static int zephyr_ll_task_cancel(void *data, struct task *task)
 	 * kept atomic, so we have to lock here too.
 	 */
 	zephyr_ll_lock(sch, &flags);
-	if (task->state != SOF_TASK_STATE_FREE)
+	if (task->state != SOF_TASK_STATE_FREE) {
 		task->state = SOF_TASK_STATE_CANCEL;
+		domain_task_cancel(sch->ll_domain, NULL, sch->n_tasks - 1);
+	}
 	zephyr_ll_unlock(sch, &flags);
 
 	return 0;
