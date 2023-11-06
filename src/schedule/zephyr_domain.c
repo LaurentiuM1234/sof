@@ -23,6 +23,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys_clock.h>
+#include <sof/audio/pipeline.h>
 
 LOG_MODULE_DECLARE(ll_schedule, CONFIG_SOF_LOG_LEVEL);
 
@@ -38,6 +39,8 @@ LOG_MODULE_DECLARE(ll_schedule, CONFIG_SOF_LOG_LEVEL);
 #define ZEPHYR_LL_STACK_SIZE	8192
 
 K_KERNEL_STACK_ARRAY_DEFINE(ll_sched_stack, CONFIG_CORE_COUNT, ZEPHYR_LL_STACK_SIZE);
+
+static int times = 0;
 
 struct zephyr_domain_thread {
 	struct k_thread ll_thread;
@@ -140,6 +143,11 @@ static void zephyr_domain_timer_fn(struct k_timer *timer)
 		return;
 	}
 
+	if (times) {
+		LOG_ERR("TIMER FIRED AT %lu CYCLES", k_cycle_get_32());
+		times--;
+	}
+
 	for (core = 0; core < CONFIG_CORE_COUNT; core++) {
 		struct zephyr_domain_thread *dt = zephyr_domain->domain_thread + core;
 
@@ -160,6 +168,11 @@ static int zephyr_domain_register(struct ll_schedule_domain *domain,
 	k_spinlock_key_t key;
 
 	tr_dbg(&ll_tr, "zephyr_domain_register()");
+
+	LOG_ERR("REGISTERING TASK %p AT %lu",
+		pipeline_task_get(task), k_cycle_get_32());
+
+	times = 10;
 
 	/* domain work only needs registered once on each core */
 	if (dt->handler)
@@ -195,6 +208,9 @@ static int zephyr_domain_register(struct ll_schedule_domain *domain,
 
 		k_timer_start(&zephyr_domain->timer, start, K_USEC(LL_TIMER_PERIOD_US));
 
+		LOG_ERR("TIMER STARTED AT %lu CYCLES. HW CYCLES PER SEC IS %d",
+			k_cycle_get_32(), sys_clock_hw_cycles_per_sec());
+
 		/* Enable the watchdog */
 		watchdog_enable(core);
 	}
@@ -216,6 +232,11 @@ static int zephyr_domain_unregister(struct ll_schedule_domain *domain,
 
 	tr_dbg(&ll_tr, "zephyr_domain_unregister()");
 
+	LOG_ERR("UNREGISTERING TASK %p AT %u",
+		pipeline_task_get(task), k_cycle_get_32());
+
+	times = 10;
+
 	/* tasks still registered on this core */
 	if (num_tasks)
 		return 0;
@@ -227,6 +248,7 @@ static int zephyr_domain_unregister(struct ll_schedule_domain *domain,
 		watchdog_disable(core);
 
 		k_timer_stop(&zephyr_domain->timer);
+		LOG_ERR("STOPPING TIMER");
 		k_timer_user_data_set(&zephyr_domain->timer, NULL);
 	}
 
