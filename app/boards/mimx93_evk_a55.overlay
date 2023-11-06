@@ -24,8 +24,30 @@
 		reg = <0x42430000 DT_SIZE_K(64)>;
 	};
 
-	sai3: memory@42660000 {
+	sai3: dai@42660000 {
+		compatible = "nxp,sai";
 		reg = <0x42660000 DT_SIZE_K(64)>;
+		mclk-is-output;
+		clocks = <&ccm IMX_CCM_SAI3_CLK 0x0 0x0>;
+		clock-names = "mclk1";
+		rx-fifo-watermark = <48>;
+		tx-fifo-watermark = <1>;
+	};
+
+	edma4: dma@42000000 {
+		compatible = "nxp,edma";
+		reg = <0x42000000 (DT_SIZE_K(64) * 32)>;
+		valid-channels = <0>, <1>;
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>,
+			<GIC_SPI 128 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
+		#dma-cells = <1>;
+		channel-mux;
+	};
+
+	dummy_dma: dma {
+		compatible = "nxp,dummy-dma";
+		dma-channels = <32>;
 	};
 
 	edma2_ch0: memory@42010000 {

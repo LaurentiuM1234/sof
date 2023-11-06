@@ -16,6 +16,7 @@
 
 LOG_MODULE_DECLARE(ipc, CONFIG_SOF_LOG_LEVEL);
 
+
 /*
  * Parse the host page tables and create the audio DMA SG configuration
  * for host audio DMA buffer. This involves creating a dma_sg_elem for each
@@ -81,6 +82,61 @@ static int ipc_parse_page_descriptors(uint8_t *page_table,
 	return 0;
 }
 
+#ifdef CONFIG_ZEPHYR_NATIVE_DRIVERS
+static int ipc_get_page_descriptors(struct dma *dmac,
+				    uint8_t *page_table,
+				    struct sof_ipc_host_buffer *ring)
+{
+	struct dma_config cfg;
+	struct dma_block_config blk;
+	int channel, ret;
+	uint32_t align;
+
+	/* request channel */
+	channel = dma_request_channel(dmac->z_dev, 0);
+	if (channel < 0) {
+		tr_err(&ipc_tr, "failed to request channel. Got: %d", channel);
+		return channel;
+	}
+
+	/* fetch size alignment */
+	ret = dma_get_attribute(dmac->z_dev, DMA_ATTR_COPY_ALIGNMENT, &align);
+	if (ret < 0) {
+		tr_err(&ipc_tr, "failed to fetch copy alignment. Got: %d", ret);
+		return ret;
+	}
+
+	/* prepare DMA configuration */
+	cfg.source_data_size = sizeof(uint32_t);
+	cfg.dest_data_size = sizeof(uint32_t);
+	cfg.block_count = 1;
+	cfg.head_block = &blk;
+	cfg.channel_direction = HOST_TO_MEMORY;
+
+	blk.source_address = POINTER_TO_UINT(ring->phy_addr);
+	blk.dest_address = POINTER_TO_UINT(page_table);
+	blk.block_size = ALIGN_UP(SOF_DIV_ROUND_UP(ring->pages * 20, 8), align);
+
+	/* commit configuration */
+	ret = dma_config(dmac->z_dev, channel, &cfg);
+	if (ret < 0) {
+		tr_err(&ipc_tr, "failed to commit configuration. Got: %d", ret);
+		return ret;
+	}
+
+	/* do transfer */
+	ret = dma_reload(dmac->z_dev, channel, 0, 0, 0);
+	if (ret < 0) {
+		tr_err(&ipc_tr, "failed to perform transfer. Got: %d", ret);
+		return ret;
+	}
+
+	/* release channel */
+	dma_release_channel(dmac->z_dev, channel);
+
+	return 0;
+}
+#else
 /*
  * Copy the audio buffer page tables from the host to the DSP max of 4K.
  */
@@ -115,15 +171,12 @@ static int ipc_get_page_descriptors(struct dma *dmac, uint8_t *page_table,
 
 	/* source buffer size is always PAGE_SIZE bytes */
 	/* 20 bits for each page, round up to minimum DMA copy size */
-#if CONFIG_ZEPHYR_NATIVE_DRIVERS
-	ret = dma_get_attribute(dmac->z_dev, DMA_ATTR_COPY_ALIGNMENT, &dma_copy_align);
-#else
 	ret = dma_get_attribute_legacy(dmac, DMA_ATTR_COPY_ALIGNMENT, &dma_copy_align);
-#endif
 	if (ret < 0) {
 		tr_err(&ipc_tr, "ipc_get_page_descriptors(): dma_get_attribute() failed");
 		goto out;
 	}
+
 	elem.size = SOF_DIV_ROUND_UP(ring->pages * 20, 8);
 	elem.size = ALIGN_UP(elem.size, dma_copy_align);
 	config.elem_array.elems = &elem;
@@ -145,8 +198,10 @@ static int ipc_get_page_descriptors(struct dma *dmac, uint8_t *page_table,
 	/* compressed page tables now in buffer at _ipc->page_table */
 out:
 	dma_channel_put_legacy(chan);
+
 	return ret;
 }
+#endif
 
 int ipc_process_host_buffer(struct ipc *ipc,
 			    struct sof_ipc_host_buffer *ring,

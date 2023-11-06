@@ -56,16 +56,16 @@ dnl     period, priority, core, time_domain)
 # playback DAI is SAI1 using 2 periods
 # Buffers use s32le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-playback.m4,
-	1, SAI, 3, sai3-wm8962,
+	1, SAI, 3, sai3-cs-cs42448,
 	PIPELINE_SOURCE_1, 2, s32le,
 	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
 
 # capture DAI is SAI1 using 2 periods
 # Buffers use s32le format, with 48 frame per 1000us on core 0 with priority 0
 DAI_ADD(sof/pipe-dai-capture.m4,
-	2, SAI, 3, sai3-wm8962,
+	2, SAI, 3, sai3-cs-cs42448,
 	PIPELINE_SINK_2, 2, s32le,
-	1000, 0, 0, SCHEDULE_TIME_DOMAIN_TIMER)
+	1000, 0, 0)
 
 
 # PCM Low Latency, id 0
@@ -74,9 +74,9 @@ dnl PCM_DUPLEX_ADD(name, pcm_id, playback, capture)
 PCM_DUPLEX_ADD(Port0, 0, PIPELINE_PCM_1, PIPELINE_PCM_2)
 
 dnl DAI_CONFIG(type, idx, link_id, name, sai_config)
-DAI_CONFIG(SAI, 3, 0, sai3-wm8962,
+DAI_CONFIG(SAI, 3, 0, sai3-cs-cs42448,
 	SAI_CONFIG(I2S, SAI_CLOCK(mclk, 12288000, codec_mclk_in),
-		SAI_CLOCK(bclk, 3072000, codec_provider),
-		SAI_CLOCK(fsync, 48000, codec_provider),
+		SAI_CLOCK(bclk, 3072000, codec_master),
+		SAI_CLOCK(fsync, 48000, codec_master),
 		SAI_TDM(2, 32, 3, 3),
 		SAI_CONFIG_DATA(SAI, 3, 0)))

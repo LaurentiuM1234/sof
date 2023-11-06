@@ -101,6 +101,7 @@ static int dai_trigger_op(struct dai *dai, int cmd, int direction)
 {
 	const struct device *dev = dai->dev;
 	enum dai_trigger_cmd zephyr_cmd;
+	int dir;
 
 	switch (cmd) {
 	case COMP_TRIGGER_STOP:
@@ -121,7 +122,13 @@ static int dai_trigger_op(struct dai *dai, int cmd, int direction)
 		return -EINVAL;
 	}
 
-	return dai_trigger(dev, direction, zephyr_cmd);
+	if (direction == SOF_IPC_STREAM_PLAYBACK) {
+		dir = DAI_DIR_TX;
+	} else {
+		dir = DAI_DIR_RX;
+	}
+
+	return dai_trigger(dev, dir, zephyr_cmd);
 }
 
 /* called from src/ipc/ipc3/handler.c and src/ipc/ipc4/dai.c */
@@ -161,6 +168,10 @@ int dai_set_config(struct dai *dai, struct ipc_config_dai *common_config,
 		cfg.type = is_blob ? DAI_INTEL_HDA_NHLT : DAI_INTEL_HDA;
 		cfg_params = is_blob ? spec_config : &sof_cfg->hda;
 		break;
+	case SOF_DAI_IMX_SAI:
+		cfg.type = DAI_IMX_SAI;
+		cfg_params = &sof_cfg->sai;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -172,8 +183,17 @@ int dai_set_config(struct dai *dai, struct ipc_config_dai *common_config,
 int dai_get_handshake(struct dai *dai, int direction, int stream_id)
 {
 	k_spinlock_key_t key = k_spin_lock(&dai->lock);
-	const struct dai_properties *props = dai_get_properties(dai->dev, direction,
-								stream_id);
+	const struct dai_properties *props;
+	int dir;
+
+	if (direction == SOF_IPC_STREAM_PLAYBACK) {
+		dir = DAI_DIR_TX;
+	} else {
+		dir = DAI_DIR_RX;
+	}
+
+	props = dai_get_properties(dai->dev, dir, stream_id);
+
 	int hs_id = props->dma_hs_id;
 
 	k_spin_unlock(&dai->lock, key);
@@ -186,13 +206,19 @@ int dai_get_fifo_depth(struct dai *dai, int direction)
 {
 	const struct dai_properties *props;
 	k_spinlock_key_t key;
-	int fifo_depth;
+	int fifo_depth, dir;
 
 	if (!dai)
 		return 0;
 
+	if (direction == SOF_IPC_STREAM_PLAYBACK) {
+		dir = DAI_DIR_TX;
+	} else {
+		dir = DAI_DIR_RX;
+	}
+
 	key = k_spin_lock(&dai->lock);
-	props = dai_get_properties(dai->dev, direction, 0);
+	props = dai_get_properties(dai->dev, dir, 0);
 	fifo_depth = props->fifo_depth;
 	k_spin_unlock(&dai->lock, key);
 
@@ -202,7 +228,13 @@ int dai_get_fifo_depth(struct dai *dai, int direction)
 int dai_get_stream_id(struct dai *dai, int direction)
 {
 	k_spinlock_key_t key = k_spin_lock(&dai->lock);
-	const struct dai_properties *props = dai_get_properties(dai->dev, direction, 0);
+	int dir;
+	if (direction == SOF_IPC_STREAM_PLAYBACK) {
+		dir = DAI_DIR_TX;
+	} else {
+		dir = DAI_DIR_RX;
+	}
+	const struct dai_properties *props = dai_get_properties(dai->dev, dir, 0);
 	int stream_id = props->stream_id;
 
 	k_spin_unlock(&dai->lock, key);
@@ -213,7 +245,13 @@ int dai_get_stream_id(struct dai *dai, int direction)
 static int dai_get_fifo(struct dai *dai, int direction, int stream_id)
 {
 	k_spinlock_key_t key = k_spin_lock(&dai->lock);
-	const struct dai_properties *props = dai_get_properties(dai->dev, direction,
+	int dir;
+	if (direction == SOF_IPC_STREAM_PLAYBACK) {
+		dir = DAI_DIR_TX;
+	} else {
+		dir = DAI_DIR_RX;
+	}
+	const struct dai_properties *props = dai_get_properties(dai->dev, dir,
 								stream_id);
 	int fifo_address = props->fifo_address;
 
@@ -715,6 +753,8 @@ static int dai_set_dma_config(struct dai_data *dd, struct comp_dev *dev)
 		dma_block_cfg->block_size = config->elem_array.elems[i].size;
 		dma_block_cfg->source_address = config->elem_array.elems[i].src;
 		dma_block_cfg->dest_address = config->elem_array.elems[i].dest;
+		dma_block_cfg->source_addr_adj = DMA_ADDR_ADJ_DECREMENT;
+		dma_block_cfg->dest_addr_adj = DMA_ADDR_ADJ_DECREMENT;
 		prev = dma_block_cfg;
 		prev->next_block = ++dma_block_cfg;
 	}
@@ -1042,6 +1082,11 @@ static int dai_comp_trigger_internal(struct dai_data *dd, struct comp_dev *dev, 
 	int ret = 0;
 
 	comp_dbg(dev, "dai_comp_trigger_internal(), command = %u", cmd);
+
+	ret = comp_set_state(dev, cmd);
+	if (ret < 0) {
+		return ret;
+	}
 
 	switch (cmd) {
 	case COMP_TRIGGER_START:
@@ -1604,7 +1649,10 @@ uint32_t dai_get_init_delay_ms(struct dai *dai)
 
 	key = k_spin_lock(&dai->lock);
 	props = dai_get_properties(dai->dev, 0, 0);
-	init_delay = props->reg_init_delay;
+	if (props)
+		init_delay = props->reg_init_delay;
+	else
+		init_delay = 0;
 	k_spin_unlock(&dai->lock, key);
 
 	return init_delay;

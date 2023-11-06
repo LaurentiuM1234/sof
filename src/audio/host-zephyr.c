@@ -78,9 +78,16 @@ static int host_dma_set_config_and_copy(struct host_data *hd, struct comp_dev *d
 					copy_callback_t cb)
 {
 	struct dma_sg_elem *local_elem = hd->config.elem_array.elems;
+	struct dma_block_config blk;
 	int ret;
 
 	local_elem->size = bytes;
+
+	blk.source_address = local_elem->src;
+	blk.dest_address = hd->dma_buffer->stream.addr;
+	blk.block_size = local_elem->size;
+
+	hd->z_config.head_block = &blk;
 
 	/* reconfigure transfer */
 	ret = dma_config(hd->chan->dma->z_dev, hd->chan->index, &hd->z_config);
@@ -117,6 +124,7 @@ static uint32_t host_get_copy_bytes_one_shot(struct host_data *hd)
 		copy_bytes = audio_stream_get_free_bytes(&buffer->stream);
 	else
 		copy_bytes = audio_stream_get_avail_bytes(&buffer->stream);
+
 
 	/* copy_bytes should be aligned to minimum possible chunk of
 	 * data to be copied by dma.
@@ -204,6 +212,8 @@ static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_c
 {
 	uint32_t copy_bytes;
 	int ret = 0;
+	struct dma_sg_elem *local_elem = hd->config.elem_array.elems;
+	struct dma_block_config blk;
 
 	comp_dbg(dev, "host_copy_one_shot()");
 
@@ -213,6 +223,12 @@ static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_c
 		return ret;
 	}
 
+	blk.source_address = local_elem->src;
+	blk.dest_address = local_elem->dest;
+	blk.block_size = local_elem->size;
+
+	hd->z_config.head_block = &blk;
+
 	/* reconfigure transfer */
 	ret = dma_config(hd->chan->dma->z_dev, hd->chan->index, &hd->z_config);
 	if (ret < 0) {
@@ -220,11 +236,15 @@ static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_c
 		return ret;
 	}
 
-	cb(dev, copy_bytes);
+	dcache_invalidate_region(UINT_TO_POINTER(local_elem->src), local_elem->size);
 
 	ret = dma_reload(hd->chan->dma->z_dev, hd->chan->index, 0, 0, copy_bytes);
 	if (ret < 0)
 		comp_err(dev, "host_copy_one_shot(): dma_copy() failed, ret = %u", ret);
+
+	dcache_writeback_region(UINT_TO_POINTER(local_elem->dest), local_elem->size);
+
+	cb(dev, copy_bytes);
 
 	return ret;
 }
@@ -866,6 +886,7 @@ int host_common_params(struct host_data *hd, struct comp_dev *dev,
 		comp_err(dev, "host_params(): requested channel %d is busy", hda_chan);
 		return -ENODEV;
 	}
+
 	hd->chan = &hd->dma->chan[channel];
 
 	uint32_t buffer_addr = 0;
@@ -883,7 +904,7 @@ int host_common_params(struct host_data *hd, struct comp_dev *dev,
 	dma_cfg->block_count = 1;
 	dma_cfg->source_data_size = config->src_width;
 	dma_cfg->dest_data_size = config->dest_width;
-	dma_cfg->head_block  = &dma_block_cfg;
+	dma_cfg->head_block = &dma_block_cfg;
 
 	for (i = 0; i < config->elem_array.count; i++) {
 		sg_elem = config->elem_array.elems + i;
@@ -906,10 +927,12 @@ int host_common_params(struct host_data *hd, struct comp_dev *dev,
 	case DMA_DIR_LMEM_TO_HMEM:
 		dma_cfg->channel_direction = MEMORY_TO_HOST;
 		dma_block_cfg.source_address = buffer_addr;
+		dma_block_cfg.dest_address = hd->config.elem_array.elems[0].dest;
 		break;
 	case DMA_DIR_HMEM_TO_LMEM:
 		dma_cfg->channel_direction = HOST_TO_MEMORY;
 		dma_block_cfg.dest_address = buffer_addr;
+		dma_block_cfg.source_address = hd->config.elem_array.elems[0].src;
 		break;
 	}
 

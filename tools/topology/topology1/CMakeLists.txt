@@ -67,6 +67,7 @@ set(TPLGS
 
 	## i.MX93 topologies
 	"sof-imx93-wm8962\;sof-imx93-wm8962\;-DPPROC=volume"
+	"sof-imx93-cs42448\;sof-imx93-cs42448\;-DPPROC=volume"
 	## end i.MX93 topologies
 
 	"sof-mt8195-mt6359-rt1019-rt5682\;sof-mt8195-mt6359-rt1019-rt5682"

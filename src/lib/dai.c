@@ -145,6 +145,10 @@ const struct device *zephyr_dev[] = {
 #if CONFIG_DAI_INTEL_HDA
 	DT_FOREACH_STATUS_OKAY(intel_hda_dai, GET_DEVICE_LIST)
 #endif
+
+#ifdef CONFIG_SOC_SERIES_MIMX9_A55
+	DT_FOREACH_STATUS_OKAY(nxp_sai, GET_DEVICE_LIST)
+#endif
 };
 
 static const struct device *dai_get_zephyr_device(uint32_t type, uint32_t index)
@@ -158,7 +162,7 @@ static const struct device *dai_get_zephyr_device(uint32_t type, uint32_t index)
 	for (i = 0; i < ARRAY_SIZE(zephyr_dev); i++) {
 		if (dai_config_get(zephyr_dev[i], &cfg, dir))
 			continue;
-		if (cfg.type == type && cfg.dai_index == index)
+		if (cfg.type == type)
 			return zephyr_dev[i];
 	}
 
