@@ -67,6 +67,7 @@ set(TPLGS
 
 	## i.MX93 topologies
 	"sof-imx93-wm8962\;sof-imx93-wm8962\;-DPPROC=volume"
+	"sof-imx93-wm8962-mixer\;sof-imx93-wm8962-mixer\;-DCODEC=wm8962\;-DRATE=48000\;-DSAI_INDEX=3"
 	"sof-imx93-cs42448\;sof-imx93-cs42448\;-DPPROC=volume"
 	## end i.MX93 topologies
 

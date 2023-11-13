@@ -30,8 +30,10 @@
 		mclk-is-output;
 		clocks = <&ccm IMX_CCM_SAI3_CLK 0x0 0x0>;
 		clock-names = "mclk1";
-		rx-fifo-watermark = <48>;
+		rx-fifo-watermark = <96>;
 		tx-fifo-watermark = <1>;
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
 	};
 
 	edma4: dma@42000000 {

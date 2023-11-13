@@ -33,7 +33,8 @@ include(`platform/imx/imx8.m4')
 PIPELINE_PCM_ADD(sof/pipe-low-latency-capture.m4,
 	2, 0, 2, s32le,
 	1000, 0, 0,
-	`RATE', `RATE', `RATE')
+	`RATE', `RATE', `RATE',
+	SCHEDULE_TIME_DOMAIN_TIMER)
 
 #
 # DAI configuration

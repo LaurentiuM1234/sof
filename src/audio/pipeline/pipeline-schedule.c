@@ -212,6 +212,7 @@ static enum task_state pipeline_task(void *arg)
 
 	if (p->trigger.cmd != COMP_TRIGGER_NO_ACTION) {
 		/* Process an offloaded command */
+		LOG_ERR("DOING TRIGGER COMMAND 0x%x", p->trigger.cmd);
 		err = pipeline_task_cmd(p, &reply);
 		if (err != SOF_TASK_STATE_RUNNING)
 			return err;
