@@ -222,7 +222,6 @@ if (CONFIG_SOC_SERIES_NXP_IMX8)
 		${SOF_DRIVERS_PATH}/imx/sai.c
 		${SOF_DRIVERS_PATH}/imx/ipc.c
 		${SOF_DRIVERS_PATH}/imx/esai.c
-		${SOF_DRIVERS_PATH}/imx/interrupt-irqsteer.c
 	)
 
 	# Platform sources
@@ -232,11 +231,6 @@ if (CONFIG_SOC_SERIES_NXP_IMX8)
 		${SOF_PLATFORM_PATH}/imx8/lib/dai.c
 		${SOF_PLATFORM_PATH}/imx8/lib/dma.c
 		${SOF_PLATFORM_PATH}/imx8/lib/memory.c
-	)
-
-	# SOF core infrastructure - runs on top of Zephyr
-	zephyr_library_sources(
-		${SOF_SRC_PATH}/drivers/interrupt.c
 	)
 
 	zephyr_library_sources(${SOF_SRC_PATH}/schedule/zephyr_ll.c)

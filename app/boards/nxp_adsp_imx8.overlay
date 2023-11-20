@@ -10,9 +10,9 @@
  * clock management) are not usable.
  */
 &lpuart2 {
-	status = "disabled";
+	status = "okay";
 };
 
 &ccm {
-	status = "disabled";
+	status = "okay";
 };

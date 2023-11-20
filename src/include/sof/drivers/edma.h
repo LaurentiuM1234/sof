@@ -95,8 +95,8 @@
 
 #define EDMA0_ESAI_CHAN_RX_IRQ	442
 #define EDMA0_ESAI_CHAN_TX_IRQ	442
-#define EDMA0_SAI_CHAN_RX_IRQ	349
-#define EDMA0_SAI_CHAN_TX_IRQ	349
+#define EDMA0_SAI_CHAN_RX_IRQ	0x1e18
+#define EDMA0_SAI_CHAN_TX_IRQ	0x1e18
 
 #ifdef CONFIG_IMX93_A55
 /* encase all of these macros in an

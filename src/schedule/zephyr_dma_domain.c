@@ -24,15 +24,7 @@
 
 LOG_MODULE_DECLARE(ll_schedule, CONFIG_SOF_LOG_LEVEL);
 
-#ifdef CONFIG_IMX
-#define interrupt_get_irq mux_interrupt_get_irq
-#define interrupt_register mux_interrupt_register
-#define interrupt_unregister mux_interrupt_unregister
-#define interrupt_enable mux_interrupt_enable
-#define interrupt_disable mux_interrupt_disable
-#endif
-
-#ifdef CONFIG_ARM64
+#if defined(CONFIG_ARM64) || defined(CONFIG_IMX8)
 #define interrupt_clear_mask(irq, bit)
 #endif /* CONFIG_ARM64 */
 
