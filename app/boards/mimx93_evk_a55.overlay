@@ -24,18 +24,6 @@
 		reg = <0x42430000 DT_SIZE_K(64)>;
 	};
 
-	sai3: memory@42660000 {
-		reg = <0x42660000 DT_SIZE_K(64)>;
-	};
-
-	edma2_ch0: memory@42010000 {
-		reg = <0x42010000 DT_SIZE_K(32)>;
-	};
-
-	edma2_ch1: memory@42018000 {
-		reg = <0x42018000 DT_SIZE_K(32)>;
-	};
-
 	outbox: memory@ce100000 {
 		reg = <0xce100000 DT_SIZE_K(4)>;
 	};
@@ -57,5 +45,48 @@
 	 */
 	host_ram: memory@80000000 {
 		reg = <0x80000000 DT_SIZE_M(1024)>;
+	};
+
+	sai3: dai@42660000 {
+		compatible = "nxp,dai-sai";
+		reg = <0x42660000 DT_SIZE_K(64)>;
+		mclk-is-output;
+		clocks = <&ccm IMX_CCM_SAI3_CLK 0x0 0x0>;
+		clock-names = "mclk1";
+		/* set to a period's worth of data (384B) so the SAI will
+		 * request a DMA transfer every 1ms (which is the period size)
+		 */
+		rx-fifo-watermark = <96>;
+		/* set to 1 because we want to avoid multiple DMA transfer requests
+		 * when the SAI is started. This way, the SAI will request data every
+		 * 1ms (which is the period size).
+		 */
+		tx-fifo-watermark = <1>;
+		/* can't let SOF use the actual FIFO depth (128 FIFO words) because
+		 * the DMA transfer size isn't divizible by it so the driver would
+		 * return an error. As such, set the FIFO depth to a period's worth
+		 * of data (384B).
+		 */
+		fifo-depth = <96>;
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
+		dai-index = <3>;
+	};
+
+	edma4: dma@42000000 {
+		compatible = "nxp,imx-edma";
+		reg = <0x42000000 (DT_SIZE_K(64) * 32)>;
+		valid-channels = <0>, <1>;
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>,
+			<GIC_SPI 128 IRQ_TYPE_LEVEL IRQ_DEFAULT_PRIORITY>;
+		#dma-cells = <0>;
+		hal-cfg-index = <1>;
+	};
+
+	host_dma: dma {
+		compatible = "nxp,sof-host-dma";
+		dma-channels = <32>;
+		#dma-cells = <0>;
 	};
 };
