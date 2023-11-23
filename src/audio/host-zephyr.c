@@ -203,6 +203,7 @@ static uint32_t host_get_copy_bytes_one_shot(struct host_data *hd)
 static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_callback_t cb)
 {
 	uint32_t copy_bytes;
+	struct dma_sg_elem *local_elem = hd->config.elem_array.elems;
 	int ret = 0;
 
 	comp_dbg(dev, "host_copy_one_shot()");
@@ -211,6 +212,15 @@ static int host_copy_one_shot(struct host_data *hd, struct comp_dev *dev, copy_c
 	if (!copy_bytes) {
 		comp_info(dev, "host_copy_one_shot(): no bytes to copy");
 		return ret;
+	}
+
+	if (IS_ENABLED(CONFIG_DMA_NXP_SOF_HOST_DMA)) {
+		/* SRC/DEST addresses have changed so the DMAC needs
+		 * to be re-configured.
+		 */
+		hd->z_config.head_block->source_address = local_elem->src;
+		hd->z_config.head_block->dest_address = local_elem->dest;
+		hd->z_config.head_block->block_size = local_elem->size;
 	}
 
 	/* reconfigure transfer */
