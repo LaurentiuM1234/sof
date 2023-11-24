@@ -1056,6 +1056,11 @@ static int dai_comp_trigger_internal(struct dai_data *dd, struct comp_dev *dev, 
 
 	comp_dbg(dev, "dai_comp_trigger_internal(), command = %u", cmd);
 
+	ret = comp_set_state(dev, cmd);
+	if (ret < 0) {
+		return ret;
+	}
+
 	switch (cmd) {
 	case COMP_TRIGGER_START:
 		comp_dbg(dev, "dai_comp_trigger_internal(), START");
