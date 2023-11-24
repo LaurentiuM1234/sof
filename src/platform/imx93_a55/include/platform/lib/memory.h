@@ -51,13 +51,6 @@
 /* SOF uses A side of the WAKEUPMIX MU */
 #define MU_BASE 0x42430000ULL
 
-/* SOF uses EDMA2 (a.k.a EDMA4 in the TRM) */
-#define EDMA2_BASE 0x42010000
-#define EDMA2_CHAN_SIZE 0x8000
-
-/* WM8962 is connected to SAI3 */
-#define SAI3_BASE 0x42660000
-
 static inline void *platform_shared_get(void *ptr, int bytes)
 {
 	return ptr;
