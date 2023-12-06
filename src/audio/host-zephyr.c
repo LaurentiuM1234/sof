@@ -786,6 +786,8 @@ int host_common_params(struct host_data *hd, struct comp_dev *dev,
 
 	period_bytes = dev->frames * get_frame_bytes(params->frame_fmt, params->channels);
 
+	LOG_ERR("HOST PERIOD BYTES IS %d", period_bytes);
+
 	if (!period_bytes) {
 		comp_err(dev, "host_params(): invalid period_bytes");
 		return -EINVAL;

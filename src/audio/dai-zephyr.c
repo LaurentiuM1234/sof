@@ -695,6 +695,8 @@ static int dai_set_dma_config(struct dai_data *dd, struct comp_dev *dev)
 	else
 		dma_cfg->source_burst_length = 8;
 
+	LOG_ERR("burst length is %d", dma_cfg->source_burst_length);
+
 	dma_cfg->dest_burst_length = dma_cfg->source_burst_length;
 	dma_cfg->cyclic = config->cyclic;
 	dma_cfg->user_data = NULL;
@@ -718,6 +720,7 @@ static int dai_set_dma_config(struct dai_data *dd, struct comp_dev *dev)
 		dma_block_cfg->dest_scatter_en = config->scatter;
 		dma_block_cfg->block_size = config->elem_array.elems[i].size;
 		dma_block_cfg->source_address = config->elem_array.elems[i].src;
+		LOG_ERR("block size is %d", dma_block_cfg->block_size);
 		dma_block_cfg->dest_address = config->elem_array.elems[i].dest;
 		if (IS_ENABLED(CONFIG_DMA_NXP_IMX_EDMA)) {
 			if (dev->direction == SOF_IPC_STREAM_PLAYBACK) {
@@ -787,11 +790,15 @@ static int dai_set_dma_buffer(struct dai_data *dd, struct comp_dev *dev,
 		return -EINVAL;
 	}
 
+	LOG_ERR("got channels: %d", params->channels);
+
 	/* calculate frame size */
 	frame_size = get_frame_bytes(dev->ipc_config.frame_fmt, params->channels);
 
 	/* calculate period size */
 	period_bytes = dev->frames * frame_size;
+	LOG_ERR("FRAME SIZE IS %d, PERIOD BYTES IS %d", frame_size,
+		period_bytes);
 	if (!period_bytes) {
 		comp_err(dev, "dai_set_dma_buffer(): invalid period_bytes.");
 		return -EINVAL;
@@ -880,6 +887,8 @@ int dai_common_params(struct dai_data *dd, struct comp_dev *dev,
 	err = dai_set_dma_config(dd, dev);
 	if (err < 0)
 		comp_err(dev, "dai_zephyr_params(): set dma config failed.");
+
+	dai_set_channels(dd->dai->dev, params->channels);
 out:
 	/*
 	 * Make sure to free all allocated items, all functions
