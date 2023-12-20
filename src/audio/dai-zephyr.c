@@ -888,7 +888,7 @@ int dai_common_params(struct dai_data *dd, struct comp_dev *dev,
 	if (err < 0)
 		comp_err(dev, "dai_zephyr_params(): set dma config failed.");
 
-	dai_set_channels(dd->dai->dev, params->channels);
+	dai_set_channels(dd->dai->dev, params->channels, dev->direction);
 out:
 	/*
 	 * Make sure to free all allocated items, all functions
