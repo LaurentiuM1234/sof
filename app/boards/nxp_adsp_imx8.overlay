@@ -4,15 +4,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* TODO: this is a temporary workaround the fact that
- * currently the Linux kernel doesn't enable MU2's power.
- * As such, CCM (and all IPs that depend on Zephyr's
- * clock management) are not usable.
- */
-&lpuart2 {
-	status = "disabled";
-};
+/ {
+	sai1: dai@59050000 {
+ 		compatible = "nxp,dai-sai";
+		reg = <0x59050000 DT_SIZE_K(64)>;
+		rx-fifo-watermark = <48>;
+		tx-fifo-watermark = <1>;
+		fifo-depth = <48>;
+		interrupt-parent = <&master5>;
+		interrupts = <28>;
+		dai-index = <1>;
+	};
 
-&ccm {
-	status = "disabled";
+	host_dma: dma {
+		compatible = "nxp,sof-host-dma";
+		dma-channels = <32>;
+		#dma-cells = <0>;
+	};
+
+	edma0: dma@591f0000 {
+		compatible = "nxp,edma";
+		reg = <0x591f0000 (DT_SIZE_K(64) * 33)>;
+		valid-channels = <14>, <15>;
+		interrupt-parent = <&master5>;
+		interrupts = <29>, <29>;
+		#dma-cells = <0>;
+	};
 };

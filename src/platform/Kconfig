@@ -62,13 +62,8 @@ config IMX8
 	select XT_INTERRUPT_LEVEL_2
 	select XT_INTERRUPT_LEVEL_3
 	select HOST_PTABLE
-	select DUMMY_DMA
 	select XT_WAITI_DELAY
 	select IMX
-	select IMX_EDMA
-	select IMX_ESAI
-	select SCHEDULE_DMA_MULTI_CHANNEL
-	select IMX_INTERRUPT_IRQSTEER
 	help
 	  Select if your target platform is imx8-compatible
 

@@ -56,7 +56,7 @@ const char irq_name_level2[] = "level2";
 const char irq_name_level5[] = "level5";
 
 /* imx currently has no IRQ driver in Zephyr so we force to xtos IRQ */
-#if defined(CONFIG_IMX)
+#if defined(CONFIG_IMX) && !defined(CONFIG_IMX8)
 int interrupt_register(uint32_t irq, void(*handler)(void *arg), void *arg)
 {
 #ifdef CONFIG_DYNAMIC_INTERRUPTS

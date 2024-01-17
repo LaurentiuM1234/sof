@@ -927,6 +927,13 @@ int dai_common_config_prepare(struct dai_data *dd, struct comp_dev *dev)
 	}
 
 	channel = dai_config_dma_channel(dd, dev, dd->dai_spec_config);
+
+	if (dev->direction == SOF_IPC_STREAM_PLAYBACK) {
+		channel = 15;
+	} else {
+		channel = 14;
+	}
+
 	comp_dbg(dev, "dai_common_config_prepare(), channel = %d", channel);
 
 	/* do nothing for asking for channel free, for compatibility. */
@@ -934,6 +941,7 @@ int dai_common_config_prepare(struct dai_data *dd, struct comp_dev *dev)
 		comp_err(dev, "dai_config is not set yet!");
 		return -EINVAL;
 	}
+
 
 	/* get DMA channel */
 	channel = dma_request_channel(dd->dma->z_dev, &channel);
@@ -945,7 +953,6 @@ int dai_common_config_prepare(struct dai_data *dd, struct comp_dev *dev)
 
 	dd->chan = &dd->dma->chan[channel];
 	dd->chan->dev_data = dd;
-
 	comp_dbg(dev, "dai_common_config_prepare(): new configured dma channel index %d",
 		 dd->chan->index);
 
